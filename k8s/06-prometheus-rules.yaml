@@ -1,0 +1,60 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: restaurante-alertas
+  namespace: restaurante
+  labels:
+    release: kube-prometheus-stack
+    app: kube-prometheus-stack
+spec:
+  groups:
+    - name: restaurante.infraestructura
+      interval: 30s
+      rules:
+        - alert: MenuServiceCaido
+          expr: up{job="menu-service"} == 0
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "menu-service está CAÍDO"
+            description: "El servicio de menu no responde. Los pedidos nuevos fallarán."
+
+        - alert: PedidosServiceCaido
+          expr: up{job="pedidos-service"} == 0
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "pedidos-service está CAÍDO"
+            description: "Los clientes no pueden realizar pedidos."
+
+    - name: restaurante.negocio
+      interval: 30s
+      rules:
+        - alert: AltaTasaPedidosRechazados
+          expr: rate(pedidos_rechazados_total[5m]) > 0.5
+          for: 2m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Alta tasa de pedidos rechazados"
+            description: "Más de 0.5 pedidos/seg rechazados. Posible falla del menu o platos no disponibles."
+
+        - alert: TimeoutsMenuFrecuentes
+          expr: rate(pedidos_timeouts_menu_total[5m]) > 0.1
+          for: 2m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Timeouts frecuentes al consultar el menu"
+            description: "pedidos-service experimenta timeouts al consultar menu-service. Los clientes reciben errores."
+
+        - alert: LatenciaAltaMenu
+          expr: histogram_quantile(0.95, rate(menu_consulta_plato_duration_seconds_bucket[5m])) > 2
+          for: 2m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Latencia p95 del menu supera 2 segundos"
+            description: "El menu responde lento. Riesgo de timeouts en cadena desde pedidos-service."

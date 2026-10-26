@@ -1,0 +1,24 @@
+grafana:
+  adminPassword: "Restaurante2024!"
+  service:
+    type: NodePort
+    nodePort: 30300
+
+prometheus:
+  service:
+    type: NodePort
+    nodePort: 30090
+  prometheusSpec:
+    serviceMonitorSelector:
+      matchLabels: {}
+    serviceMonitorNamespaceSelector:
+      matchLabels: {}
+    ruleSelector:
+      matchLabels: {}
+    ruleNamespaceSelector:
+      matchLabels: {}
+
+alertmanager:
+  service:
+    type: NodePort
+    nodePort: 30093
